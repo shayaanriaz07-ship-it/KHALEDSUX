@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Unit 1 Biology — Flashcard Catalog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#E3DCC4;
+    --bg-grain:#D9D0B4;
+    --paper:#FBF7EC;
+    --paper-edge:#E7DCB9;
+    --ink:#2B2A28;
+    --ink-soft:#726A57;
+    --rule:#9FB4C7;
+    --margin:#C1666B;
+    --green:#3F6B4A;
+    --green-bg:#E3EBE0;
+    --amber:#B9782B;
+    --amber-bg:#F4E7D2;
+    --tab-bg:#D6CBA6;
+    --tab-active:#FBF7EC;
+    --focus:#3F6B4A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 20% 15%, var(--bg-grain) 0%, transparent 45%),
+      radial-gradient(circle at 85% 80%, var(--bg-grain) 0%, transparent 40%),
+      var(--bg);
+    font-family:'Source Serif 4', serif;
+    color:var(--ink);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:32px 16px 64px;
+  }
+  .masthead{
+    text-align:center;
+    max-width:520px;
+    margin-bottom:22px;
+  }
+  .masthead h1{
+    font-family:'Courier Prime', monospace;
+    font-weight:700;
+    font-size:1.9rem;
+    letter-spacing:0.01em;
+    margin:0 0 6px;
+  }
+  .masthead p{
+    margin:0;
+    color:var(--ink-soft);
+    font-size:1rem;
+  }
+  .tabs{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:6px;
+    margin-bottom:0;
+    max-width:640px;
+    position:relative;
+    z-index:2;
+  }
+  .tab{
+    font-family:'Courier Prime', monospace;
+    font-size:0.85rem;
+    background:var(--tab-bg);
+    color:var(--ink-soft);
+    border:1px solid var(--paper-edge);
+    border-bottom:none;
+    padding:8px 14px 10px;
+    border-radius:8px 8px 0 0;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease, transform .1s ease;
+  }
+  .tab:hover{ transform:translateY(-1px); }
+  .tab.active{
+    background:var(--tab-active);
+    color:var(--ink);
+    font-weight:700;
+  }
+  .tab:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+
+  .deck-wrap{
+    position:relative;
+    width:100%;
+    max-width:520px;
+    margin-top:-1px;
+  }
+  .stack-shadow{
+    position:absolute;
+    inset:0;
+    border-radius:14px;
+    background:var(--paper);
+    border:1px solid var(--paper-edge);
+  }
+  .stack-shadow.s1{ transform:rotate(-3deg) translateY(6px); z-index:1; }
+  .stack-shadow.s2{ transform:rotate(2.5deg) translateY(10px); z-index:0; opacity:.85;}
+
+  .card-scene{
+    position:relative;
+    z-index:2;
+    perspective:1400px;
+    min-height:280px;
+  }
+  .card{
+    position:relative;
+    width:100%;
+    min-height:280px;
+    transform-style:preserve-3d;
+    transition:transform .5s cubic-bezier(.4,.2,.2,1);
+    cursor:pointer;
+  }
+  .card.flipped{ transform:rotateY(180deg); }
+  @media (prefers-reduced-motion:reduce){
+    .card{ transition:none; }
+  }
+  .face{
+    position:absolute;
+    inset:0;
+    backface-visibility:hidden;
+    background:var(--paper);
+    border:1px solid var(--paper-edge);
+    border-radius:14px;
+    box-shadow:0 10px 24px rgba(43,42,40,.14);
+    padding:34px 30px 26px 54px;
+    display:flex;
+    flex-direction:column;
+  }
+  .face::before{
+    /* red margin rule */
+    content:"";
+    position:absolute;
+    left:34px; top:0; bottom:0;
+    width:1.5px;
+    background:var(--margin);
+    opacity:.55;
+  }
+  .face::after{
+    /* punch hole */
+    content:"";
+    position:absolute;
+    left:16px; top:22px;
+    width:12px; height:12px;
+    border-radius:50%;
+    background:var(--bg);
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.25);
+  }
+  .ruled{
+    position:absolute;
+    left:54px; right:24px; top:0; bottom:0;
+    background-image:repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 30px,
+      var(--rule) 31px,
+      transparent 32px
+    );
+    opacity:.28;
+    pointer-events:none;
+  }
+  .face-tag{
+    font-family:'Courier Prime', monospace;
+    font-size:.75rem;
+    color:var(--ink-soft);
+    margin-bottom:14px;
+  }
+  .face-body{
+    flex:1;
+    display:flex;
+    align-items:center;
+  }
+  .term-text{
+    font-family:'Courier Prime', monospace;
+    font-weight:700;
+    font-size:1.55rem;
+    line-height:1.35;
+  }
+  .def-text{
+    font-size:1.12rem;
+    line-height:1.55;
+  }
+  .face-hint{
+    font-size:.8rem;
+    color:var(--ink-soft);
+    margin-top:14px;
+  }
+  .face.back{ transform:rotateY(180deg); }
+
+  .empty-state{
+    background:var(--paper);
+    border:1px solid var(--paper-edge);
+    border-radius:14px;
+    padding:40px 30px;
+    text-align:center;
+    color:var(--ink-soft);
+  }
+  .empty-state strong{ color:var(--ink); display:block; margin-bottom:6px; font-family:'Courier Prime', monospace;}
+
+  .controls{
+    display:flex;
+    justify-content:center;
+    gap:10px;
+    margin-top:20px;
+    max-width:520px;
+    width:100%;
+  }
+  .ctrl-btn{
+    font-family:'Courier Prime', monospace;
+    font-size:.85rem;
+    background:var(--paper);
+    border:1px solid var(--paper-edge);
+    border-radius:8px;
+    padding:9px 14px;
+    cursor:pointer;
+    color:var(--ink);
+  }
+  .ctrl-btn:hover{ background:var(--tab-active); }
+  .ctrl-btn:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+
+  .verdict-row{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+    max-width:520px;
+    width:100%;
+  }
+  .verdict-btn{
+    flex:1;
+    font-family:'Source Serif 4', serif;
+    font-weight:600;
+    font-size:1rem;
+    padding:12px 10px;
+    border-radius:10px;
+    border:1px solid transparent;
+    cursor:pointer;
+  }
+  .verdict-btn:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+  .verdict-btn.review{ background:var(--amber-bg); color:var(--amber); border-color:#e2c497; }
+  .verdict-btn.review:hover{ background:#eedcb9; }
+  .verdict-btn.know{ background:var(--green-bg); color:var(--green); border-color:#bcd2bd; }
+  .verdict-btn.know:hover{ background:#d5e5d3; }
+
+  .status-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    max-width:520px;
+    width:100%;
+    margin-top:18px;
+    font-size:.85rem;
+    color:var(--ink-soft);
+  }
+  .status-row label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    cursor:pointer;
+  }
+  .status-row button{
+    background:none;
+    border:none;
+    color:var(--ink-soft);
+    text-decoration:underline;
+    cursor:pointer;
+    font-size:.85rem;
+    padding:0;
+  }
+  .status-row button:focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+
+  .progress-line{
+    max-width:520px;
+    width:100%;
+    height:3px;
+    background:var(--paper-edge);
+    border-radius:2px;
+    margin-top:10px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--green);
+    transition:width .3s ease;
+  }
+
+  footer{
+    margin-top:36px;
+    font-size:.78rem;
+    color:var(--ink-soft);
+    text-align:center;
+    max-width:480px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="masthead">
+    <h1>Unit 1 Biology</h1>
+    <p>A flashcard catalog for chapters 1–4, built from your study set.</p>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="deck-wrap">
+    <div class="stack-shadow s2"></div>
+    <div class="stack-shadow s1"></div>
+    <div class="card-scene" id="cardScene">
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <strong>No cards here</strong>Try another chapter, or uncheck "Hide mastered".
+      </div>
+      <div class="card" id="card" tabindex="0" role="button" aria-label="Flashcard, press space to flip">
+        <div class="face front">
+          <div class="ruled"></div>
+          <div class="face-tag" id="tagFront"></div>
+          <div class="face-body"><div class="term-text" id="termText"></div></div>
+          <div class="face-hint">Tap to see the answer</div>
+        </div>
+        <div class="face back">
+          <div class="ruled"></div>
+          <div class="face-tag" id="tagBack"></div>
+          <div class="face-body"><div class="def-text" id="defText"></div></div>
+          <div class="face-hint">Tap to flip back</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="ctrl-btn" id="prevBtn">‹ Previous</button>
+    <button class="ctrl-btn" id="shuffleBtn">Shuffle</button>
+    <button class="ctrl-btn" id="nextBtn">Next ›</button>
+  </div>
+
+  <div class="verdict-row">
+    <button class="verdict-btn review" id="reviewBtn">Keep studying</button>
+    <button class="verdict-btn know" id="knowBtn">Got it</button>
+  </div>
+
+  <div class="progress-line"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="status-row">
+    <span id="counter">Card 0 of 0</span>
+    <label><input type="checkbox" id="hideMastered" /> Hide mastered</label>
+    <button id="resetBtn">Start over</button>
+  </div>
+
+  <footer>
+    Progress is saved in this browser only. Cards mastered here won't follow you to another device or browser.
+  </footer>
+
+<script>
+(function(){
+  var DATA = [
+    {id:1, ch:1, term:"What is the purpose of the scientific method?", def:"To test explanations about the natural world using controlled observations and evidence."},
+    {id:2, ch:1, term:"What makes a hypothesis scientific?", def:"It must be testable and falsifiable."},
+    {id:3, ch:1, term:"Independent variable", def:"The factor the researcher deliberately changes."},
+    {id:4, ch:1, term:"Dependent variable", def:"The response the researcher measures."},
+    {id:5, ch:1, term:"Control group", def:"The untreated or baseline group used for comparison."},
+    {id:6, ch:1, term:"Experimental group", def:"The group that receives the treatment being tested."},
+    {id:7, ch:1, term:"Controlled variable", def:"A condition kept the same across groups."},
+    {id:8, ch:1, term:"Quantitative data", def:"Numerical measurements or counts."},
+    {id:9, ch:1, term:"Qualitative data", def:"Descriptive, nonnumerical observations."},
+    {id:10, ch:1, term:"Hypothesis vs. theory", def:"A hypothesis is a specific testable explanation; a theory is a broad explanation supported by extensive evidence."},
+    {id:11, ch:1, term:"Seven signs of life", def:"Cellular organization, energy use, homeostasis, growth/development, response, reproduction/heredity, and evolution."},
+    {id:12, ch:1, term:"Homeostasis", def:"Maintenance of relatively stable internal conditions."},
+    {id:13, ch:1, term:"Cell theory: statement 1", def:"All living things consist of one or more cells."},
+    {id:14, ch:1, term:"Cell theory: statement 2", def:"The cell is the basic unit of structure and function."},
+    {id:15, ch:1, term:"Cell theory: statement 3", def:"All cells arise from preexisting cells."},
+    {id:16, ch:1, term:"Population vs. community", def:"A population is one species in an area; a community includes all species in the area."},
+    {id:17, ch:1, term:"Ecosystem", def:"A community plus its nonliving environment."},
+    {id:18, ch:1, term:"Organization, smallest to largest", def:"Atom, molecule, organelle, cell, tissue, organ, organ system, organism, population, community, ecosystem, biosphere."},
+    {id:19, ch:2, term:"Proton", def:"A +1 particle in the nucleus; proton number determines the element."},
+    {id:20, ch:2, term:"Neutron", def:"A neutral particle in the nucleus; neutron variation creates isotopes."},
+    {id:21, ch:2, term:"Electron", def:"A -1 particle outside the nucleus; gains or losses create ions."},
+    {id:22, ch:2, term:"Atomic number", def:"Number of protons."},
+    {id:23, ch:2, term:"Mass number", def:"Protons + neutrons."},
+    {id:24, ch:2, term:"How do you find neutrons?", def:"Mass number minus atomic number."},
+    {id:25, ch:2, term:"Neutral atom electron count", def:"Electrons equal protons."},
+    {id:26, ch:2, term:"Isotope", def:"Same element, different neutron number."},
+    {id:27, ch:2, term:"Cation", def:"A positive ion formed by losing electrons."},
+    {id:28, ch:2, term:"Anion", def:"A negative ion formed by gaining electrons."},
+    {id:29, ch:2, term:"Nonpolar covalent bond", def:"Shares electrons approximately equally."},
+    {id:30, ch:2, term:"Polar covalent bond", def:"Shares electrons unequally, creating partial charges."},
+    {id:31, ch:2, term:"Ionic interaction", def:"Attraction between oppositely charged ions after electron transfer."},
+    {id:32, ch:2, term:"Hydrogen bond", def:"Weak attraction between a partially positive H and an electronegative region."},
+    {id:33, ch:2, term:"Why is water polar?", def:"Oxygen attracts shared electrons more strongly, and the bent shape keeps partial charges separated."},
+    {id:34, ch:2, term:"Cohesion", def:"Water molecules stick to one another."},
+    {id:35, ch:2, term:"Adhesion", def:"Water sticks to another material."},
+    {id:36, ch:2, term:"Why does water resist temperature change?", def:"Many hydrogen bonds must absorb energy before molecular motion rises greatly."},
+    {id:37, ch:2, term:"Why does ice float?", def:"Hydrogen bonds form an open crystal, making ice less dense than liquid water."},
+    {id:38, ch:2, term:"pH scale", def:"A logarithmic measure of H+: below 7 acidic, 7 neutral, above 7 basic."},
+    {id:39, ch:2, term:"Buffer", def:"A substance that resists pH change by accepting or releasing H+."},
+    {id:40, ch:2, term:"Why is carbon versatile?", def:"It forms four covalent bonds and can make chains, branches, rings, and multiple bonds."},
+    {id:41, ch:3, term:"Organic molecule", def:"Usually contains carbon bonded to hydrogen."},
+    {id:42, ch:3, term:"Isomer", def:"Same molecular formula, different arrangement and properties."},
+    {id:43, ch:3, term:"Monomer", def:"Small molecular building block."},
+    {id:44, ch:3, term:"Polymer", def:"Long molecule made from repeating or similar monomers."},
+    {id:45, ch:3, term:"Dehydration synthesis", def:"Joins subunits while removing water."},
+    {id:46, ch:3, term:"Hydrolysis", def:"Breaks a bond by adding water."},
+    {id:47, ch:3, term:"Hydrophilic", def:"Polar or charged; interacts with water."},
+    {id:48, ch:3, term:"Hydrophobic", def:"Nonpolar; avoids or does not mix with water."},
+    {id:49, ch:3, term:"Four major biological molecules", def:"Carbohydrates, lipids, proteins, nucleic acids."},
+    {id:50, ch:3, term:"Carbohydrate elements and ratio", def:"C, H, O, commonly about 1:2:1."},
+    {id:51, ch:3, term:"Carbohydrate monomer", def:"Monosaccharide, such as glucose."},
+    {id:52, ch:3, term:"Monosaccharide / disaccharide / polysaccharide", def:"One sugar / two joined sugars / many joined sugars."},
+    {id:53, ch:3, term:"Starch", def:"Plant glucose-storage polysaccharide."},
+    {id:54, ch:3, term:"Glycogen", def:"Animal glucose-storage polysaccharide."},
+    {id:55, ch:3, term:"Cellulose", def:"Structural polysaccharide in plant cell walls."},
+    {id:56, ch:3, term:"Chitin", def:"Structural polysaccharide in fungal walls and arthropod exoskeletons."},
+    {id:57, ch:3, term:"Three lipid types", def:"Triglycerides, phospholipids, and steroids."},
+    {id:58, ch:3, term:"Triglyceride structure", def:"One glycerol joined to three fatty acids."},
+    {id:59, ch:3, term:"Saturated vs. unsaturated fatty acid", def:"No C=C double bonds vs. one or more C=C double bonds."},
+    {id:60, ch:3, term:"Phospholipid structure", def:"Hydrophilic phosphate head and two hydrophobic fatty-acid tails."},
+    {id:61, ch:3, term:"Protein monomer", def:"Amino acid."},
+    {id:62, ch:3, term:"Four amino-acid parts", def:"Amino group, carboxyl group, H, and variable R group."},
+    {id:63, ch:3, term:"Peptide bond", def:"Covalent bond between amino acids."},
+    {id:64, ch:3, term:"Protein structures", def:"Primary sequence; secondary helices/sheets; tertiary 3-D fold; quaternary multiple subunits."},
+    {id:65, ch:3, term:"Denaturation", def:"Loss of normal protein shape and often function due to heat, pH, or chemicals."},
+    {id:66, ch:3, term:"Nucleotide parts", def:"Phosphate group, five-carbon sugar, nitrogenous base."},
+    {id:67, ch:3, term:"DNA and RNA roles", def:"DNA stores instructions; RNA helps use them to produce proteins."},
+    {id:68, ch:4, term:"Prokaryote", def:"Cell without a nucleus or other membrane-bound organelles."},
+    {id:69, ch:4, term:"Eukaryote", def:"Cell with a nucleus and membrane-bound organelles."},
+    {id:70, ch:4, term:"Four structures shared by all cells", def:"Plasma membrane, cytoplasm, DNA, and ribosomes."},
+    {id:71, ch:4, term:"Why is cell size limited?", def:"Volume grows faster than surface area, lowering exchange capacity per unit volume."},
+    {id:72, ch:4, term:"Surface-area-to-volume ratio", def:"Membrane area available compared with the amount of cytoplasm it must serve."},
+    {id:73, ch:4, term:"Fluid mosaic model", def:"A flexible phospholipid bilayer containing moving proteins, cholesterol, and carbohydrates."},
+    {id:74, ch:4, term:"Why do phospholipids form bilayers?", def:"Hydrophilic heads face water; hydrophobic tails turn inward away from water."},
+    {id:75, ch:4, term:"Plasma membrane", def:"Selective boundary controlling transport, communication, and recognition."},
+    {id:76, ch:4, term:"Channel or carrier protein", def:"Helps specific substances cross the membrane."},
+    {id:77, ch:4, term:"Receptor protein", def:"Binds a signal and triggers a cellular response."},
+    {id:78, ch:4, term:"Nucleus", def:"Stores DNA and regulates gene expression."},
+    {id:79, ch:4, term:"Nucleolus", def:"Makes rRNA and assembles ribosomal subunits."},
+    {id:80, ch:4, term:"Nuclear pore", def:"Controls movement between nucleus and cytoplasm."},
+    {id:81, ch:4, term:"Chromatin vs. chromosome", def:"Loose DNA-protein complex vs. condensed chromatin."},
+    {id:82, ch:4, term:"Ribosome", def:"Translates mRNA and joins amino acids into a polypeptide."},
+    {id:83, ch:4, term:"Free vs. bound ribosomes", def:"Free make many cytosolic proteins; bound make proteins for secretion, membranes, or endomembrane organelles."},
+    {id:84, ch:4, term:"Rough ER", def:"Folds and modifies proteins made by attached ribosomes."},
+    {id:85, ch:4, term:"Smooth ER", def:"Makes lipids, detoxifies, stores Ca2+, and processes carbohydrates."},
+    {id:86, ch:4, term:"Golgi apparatus", def:"Modifies, sorts, and packages proteins and lipids."},
+    {id:87, ch:4, term:"Secreted-protein pathway", def:"Ribosome, then rough ER, then vesicle, then Golgi, then vesicle, then plasma membrane."},
+    {id:88, ch:4, term:"Lysosome", def:"Digests and recycles macromolecules and damaged structures."},
+    {id:89, ch:4, term:"Vacuole", def:"Storage compartment; plant central vacuole also maintains turgor."},
+    {id:90, ch:4, term:"Mitochondrion", def:"Produces most cellular ATP through aerobic respiration."},
+    {id:91, ch:4, term:"Cristae", def:"Inner-membrane folds that increase area for ATP production."},
+    {id:92, ch:4, term:"Chloroplast", def:"Performs photosynthesis in plants and algae."},
+    {id:93, ch:4, term:"Thylakoid", def:"Membrane sac where light-dependent reactions occur."},
+    {id:94, ch:4, term:"Cytoskeleton", def:"Supports shape, organizes the cell, enables movement, and supplies transport tracks."},
+    {id:95, ch:4, term:"Motor protein", def:"Uses ATP to move cargo or cell structures along cytoskeletal tracks."},
+    {id:96, ch:4, term:"Cell wall", def:"Rigid external layer providing support and protection."},
+    {id:97, ch:4, term:"Animal extracellular matrix", def:"Collagen, proteoglycans, and glycoproteins outside cells for support, adhesion, and signaling."},
+    {id:98, ch:4, term:"Tight junction", def:"Seals neighboring animal cells."},
+    {id:99, ch:4, term:"Adhesion junction", def:"Mechanically fastens neighboring cells and their cytoskeletons."},
+    {id:100, ch:4, term:"Gap junction", def:"Channel allowing ions and small molecules to pass directly between animal cells."},
+    {id:101, ch:5, term:"Benedict's test", def:"Detects reducing sugars; heat causes green/yellow/orange/red when positive."},
+    {id:102, ch:5, term:"Iodine test", def:"Detects starch; positive result is blue-black."},
+    {id:103, ch:5, term:"Biuret test", def:"Detects peptide bonds/protein; positive result is violet."},
+    {id:104, ch:5, term:"Sudan test", def:"Detects lipids; positive lipids form a red/orange-stained layer or droplets."}
+  ];
+
+  var CHAPTER_NAMES = {
+    1: "Chapter 1: The Study of Life",
+    2: "Chapter 2: The Chemical Foundation of Life",
+    3: "Chapter 3: Biological Molecules",
+    4: "Chapter 4: Cell Structure",
+    5: "Lab-Test Mini Deck"
+  };
+  var TAB_LABELS = [
+    {key:"all", label:"All"},
+    {key:1, label:"Ch 1"},
+    {key:2, label:"Ch 2"},
+    {key:3, label:"Ch 3"},
+    {key:4, label:"Ch 4"},
+    {key:5, label:"Labs"}
+  ];
+
+  var STORAGE_KEY = "bio-unit1-flashcard-progress";
+
+  function loadProgress(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return {known:[]};
+      var parsed = JSON.parse(raw);
+      if(!parsed || !Array.isArray(parsed.known)) return {known:[]};
+      return parsed;
+    }catch(e){
+      return {known:[]};
+    }
+  }
+  function saveProgress(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({known: Array.from(known)}));
+    }catch(e){
+      /* storage unavailable in this context (e.g. sandboxed preview) — session continues in memory only */
+    }
+  }
+
+  var known = new Set(loadProgress().known);
+  var currentFilter = "all";
+  var hideMastered = false;
+  var order = [];
+  var pos = 0;
+  var flipped = false;
+
+  var tabsEl = document.getElementById("tabs");
+  var cardEl = document.getElementById("card");
+  var termTextEl = document.getElementById("termText");
+  var defTextEl = document.getElementById("defText");
+  var tagFrontEl = document.getElementById("tagFront");
+  var tagBackEl = document.getElementById("tagBack");
+  var counterEl = document.getElementById("counter");
+  var progressFillEl = document.getElementById("progressFill");
+  var sceneEl = document.getElementById("cardScene");
+
+  TAB_LABELS.forEach(function(t){
+    var btn = document.createElement("button");
+    btn.className = "tab" + (t.key === currentFilter ? " active" : "");
+    btn.textContent = t.label;
+    btn.dataset.key = t.key;
+    btn.addEventListener("click", function(){
+      currentFilter = t.key;
+      Array.from(tabsEl.children).forEach(function(c){ c.classList.remove("active"); });
+      btn.classList.add("active");
+      buildOrder(true);
+    });
+    tabsEl.appendChild(btn);
+  });
+
+  function matchesFilter(card){
+    if(currentFilter !== "all" && card.ch !== currentFilter) return false;
+    if(hideMastered && known.has(card.id)) return false;
+    return true;
+  }
+
+  function buildOrder(reset, keepShuffle){
+    var prevOrder = order.slice();
+    var indices = [];
+    DATA.forEach(function(c, i){ if(matchesFilter(c)) indices.push(i); });
+    if(keepShuffle && prevOrder.length){
+      // preserve relative order where possible
+      var set = new Set(indices);
+      var kept = prevOrder.filter(function(i){ return set.has(i); });
+      var added = indices.filter(function(i){ return kept.indexOf(i) === -1; });
+      order = kept.concat(added);
+    } else {
+      order = indices;
+    }
+    if(reset) pos = 0;
+    if(pos >= order.length) pos = Math.max(0, order.length - 1);
+    flipped = false;
+    render();
+  }
+
+  function shuffleArray(arr){
+    for(var i = arr.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr;
+  }
+
+  function render(){
+    var emptyEl = document.getElementById("emptyState");
+    if(order.length === 0){
+      emptyEl.style.display = "block";
+      cardEl.style.display = "none";
+      counterEl.textContent = "Card 0 of 0";
+      progressFillEl.style.width = "0%";
+      return;
+    }
+    emptyEl.style.display = "none";
+    cardEl.style.display = "";
+    var card = DATA[order[pos]];
+    termTextEl.textContent = card.term;
+    defTextEl.textContent = card.def;
+    var tag = CHAPTER_NAMES[card.ch] + (known.has(card.id) ? " · mastered" : "");
+    tagFrontEl.textContent = tag;
+    tagBackEl.textContent = tag;
+    cardEl.classList.toggle("flipped", flipped);
+    counterEl.textContent = "Card " + (pos + 1) + " of " + order.length + " \u00b7 " + known.size + " mastered";
+    var knownInView = order.filter(function(i){ return known.has(DATA[i].id); }).length;
+    progressFillEl.style.width = Math.round((knownInView / order.length) * 100) + "%";
+  }
+
+  function flip(){
+    flipped = !flipped;
+    render();
+  }
+  function next(){
+    if(order.length === 0) return;
+    pos = (pos + 1) % order.length;
+    flipped = false;
+    render();
+  }
+  function prev(){
+    if(order.length === 0) return;
+    pos = (pos - 1 + order.length) % order.length;
+    flipped = false;
+    render();
+  }
+  function markKnown(){
+    if(order.length === 0) return;
+    known.add(DATA[order[pos]].id);
+    saveProgress();
+    if(hideMastered){
+      buildOrder(false, true);
+    } else {
+      next();
+    }
+  }
+  function markReview(){
+    if(order.length === 0) return;
+    known.delete(DATA[order[pos]].id);
+    saveProgress();
+    next();
+  }
+
+  cardEl.addEventListener("click", flip);
+  cardEl.addEventListener("keydown", function(e){
+    if(e.code === "Space" || e.key === "Enter"){ e.preventDefault(); flip(); }
+  });
+  document.getElementById("prevBtn").addEventListener("click", prev);
+  document.getElementById("nextBtn").addEventListener("click", next);
+  document.getElementById("shuffleBtn").addEventListener("click", function(){
+    shuffleArray(order);
+    pos = 0;
+    flipped = false;
+    render();
+  });
+  document.getElementById("knowBtn").addEventListener("click", function(e){ e.stopPropagation(); markKnown(); });
+  document.getElementById("reviewBtn").addEventListener("click", function(e){ e.stopPropagation(); markReview(); });
+  document.getElementById("hideMastered").addEventListener("change", function(e){
+    hideMastered = e.target.checked;
+    buildOrder(true, true);
+  });
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    if(confirm("Clear all mastered marks and start over?")){
+      known.clear();
+      saveProgress();
+      buildOrder(true, true);
+    }
+  });
+
+  document.addEventListener("keydown", function(e){
+    if(document.activeElement && document.activeElement.tagName === "INPUT") return;
+    if(e.key === "ArrowRight") next();
+    else if(e.key === "ArrowLeft") prev();
+  });
+
+  buildOrder(true);
+})();
+</script>
+</body>
+</html>
